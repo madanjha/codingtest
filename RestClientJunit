@@ -1,0 +1,68 @@
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.resilience4j.bulkhead.annotation.Bulkhead;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.concurrent.CompletableFuture;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+@SpringBootTest
+public class RestClientConnectorTest {
+
+    @Mock
+    private RestTemplate restTemplate;
+
+    @InjectMocks
+    private RestClientConnector restClientConnector;
+
+    @Value("${localhost://8800/services/}")
+    private String servurl;
+
+    private ObjectMapper objectMapper = new ObjectMapper();
+
+    @BeforeEach
+    public void setUp() {
+        // You can set up any common configurations here
+    }
+
+    @Test
+    public void testGetRestcallServ() throws JsonProcessingException {
+        // Arrange
+        ObjectEntity obj = new ObjectEntity(); // Replace with actual object initialization
+        Header header = new Header(); // Replace with actual header initialization
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.add("Content-Type", "application/json");
+        HttpEntity<ObjectEntity> requestEntity = new HttpEntity<>(obj, httpHeaders);
+        ResponseEntity<Object> responseEntity = ResponseEntity.ok().body(new Object()); // Replace with actual response
+
+        when(restTemplate.exchange(eq(servurl), eq(HttpMethod.POST), eq(requestEntity), eq(Object.class)))
+                .thenReturn(responseEntity);
+
+        // Act
+        CompletableFuture<Object> future = restClientConnector.getRestcallServ(obj, header);
+        Object result = future.join(); // Wait for CompletableFuture to complete
+
+        // Assert
+        assertEquals(responseEntity.getBody(), result);
+    }
+}
