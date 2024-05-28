@@ -67,3 +67,67 @@ public class ProductServiceTest {
         assert ((ErrorResponseDTO) responseEntity.getBody()).getMessage().equals("Error in flow, there is no record found");
     }
 }
+
+================================
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
+@ExtendWith(MockitoExtension.class)
+public class ProductServiceTest {
+
+    @Mock
+    private ProductRepository repo;
+
+    @InjectMocks
+    private ProductService productService;
+
+    private ProductDTO productReq;
+    private ProductDetail productDetail;
+
+    @BeforeEach
+    public void setUp() {
+        productReq = new ProductDTO();
+        productReq.setId(1L);
+        productReq.setName("TestProduct");
+        productReq.setQuantity(10);
+        productReq.setType("TestType");
+
+        productDetail = new ProductDetail();
+        productDetail.setId(1L);
+        productDetail.setName("TestProduct");
+        productDetail.setQuantity(10);
+        productDetail.setType("TestType");
+    }
+
+    @Test
+    public void testSaveProductSuccess() {
+        when(repo.save(any(ProductDetail.class))).thenReturn(productDetail);
+
+        ResponseEntity<Object> responseEntity = productService.saveProduct(productReq);
+
+        assert responseEntity.getStatusCode() == HttpStatus.CREATED;
+        assert responseEntity.getBody() instanceof ProductDetail;
+        assert ((ProductDetail) responseEntity.getBody()).getName().equals("TestProduct");
+    }
+
+    @Test
+    public void testSaveProductException() {
+        when(repo.save(any(ProductDetail.class))).thenThrow(new RuntimeException("Database error"));
+
+        ResponseEntity<Object> responseEntity = productService.saveProduct(productReq);
+
+        assert responseEntity.getStatusCode() == HttpStatus.INTERNAL_SERVER_ERROR;
+        assert responseEntity.getBody() instanceof ErrorResponseDTO;
+        assert ((ErrorResponseDTO) responseEntity.getBody()).getMessage().equals("Error in flow, there is no record found");
+    }
+}
