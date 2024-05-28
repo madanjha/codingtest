@@ -1,0 +1,69 @@
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import java.util.Arrays;
+import java.util.List;
+import static org.assertj.core.api.Assertions.assertThat;
+
+@DataJpaTest
+public class AgentRepositoryTest {
+    @Autowired
+    private AgentRepository agentRepository;
+
+    @Test
+    public void testFindByIdIn() {
+        // Given
+        Agent agent1 = new Agent();
+        agent1.setId(1L);
+        agent1.setName("Agent 1");
+        agentRepository.save(agent1);
+
+        Agent agent2 = new Agent();
+        agent2.setId(2L);
+        agent2.setName("Agent 2");
+        agentRepository.save(agent2);
+
+        List<Long> ids = Arrays.asList(1L, 2L);
+
+        // When
+        List<Agent> agents = agentRepository.findByIdIn(ids);
+
+        // Then
+        assertThat(agents).hasSize(2);
+        assertThat(agents).extracting(Agent::getName).containsExactlyInAnyOrder("Agent 1", "Agent 2");
+    }
+}
+
+
+
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@ExtendWith(SpringExtension.class)
+@DataJpaTest
+public class MyEntityRepositoryTest {
+
+    @Autowired
+    private MyEntityRepository myEntityRepository;
+
+    @Test
+    public void testInsert() {
+        // Arrange
+        MyEntity entity = new MyEntity();
+        entity.setName("Test Name");
+
+        // Act
+        MyEntity savedEntity = myEntityRepository.save(entity);
+
+        // Assert
+        assertThat(savedEntity).isNotNull();
+        assertThat(savedEntity.getId()).isNotNull();
+        assertThat(savedEntity.getName()).isEqualTo("Test Name");
+    }
+}
