@@ -1,69 +1,69 @@
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import java.util.Arrays;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
+
+import java.util.Collections;
 import java.util.List;
-import static org.assertj.core.api.Assertions.assertThat;
 
-@DataJpaTest
-public class AgentRepositoryTest {
-    @Autowired
-    private AgentRepository agentRepository;
-
-    @Test
-    public void testFindByIdIn() {
-        // Given
-        Agent agent1 = new Agent();
-        agent1.setId(1L);
-        agent1.setName("Agent 1");
-        agentRepository.save(agent1);
-
-        Agent agent2 = new Agent();
-        agent2.setId(2L);
-        agent2.setName("Agent 2");
-        agentRepository.save(agent2);
-
-        List<Long> ids = Arrays.asList(1L, 2L);
-
-        // When
-        List<Agent> agents = agentRepository.findByIdIn(ids);
-
-        // Then
-        assertThat(agents).hasSize(2);
-        assertThat(agents).extracting(Agent::getName).containsExactlyInAnyOrder("Agent 1", "Agent 2");
-    }
-}
-
-
-
-
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
-import static org.assertj.core.api.Assertions.assertThat;
+@ExtendWith(MockitoExtension.class)
+public class ProductServiceTest {
 
-@ExtendWith(SpringExtension.class)
-@DataJpaTest
-public class MyEntityRepositoryTest {
+    @Mock
+    private ProductRepository repo;
 
-    @Autowired
-    private MyEntityRepository myEntityRepository;
+    @InjectMocks
+    private ProductService productService;
+
+    private ProductDTO productReq;
+    private ProductDetail productDetail;
+
+    @BeforeEach
+    public void setUp() {
+        productReq = new ProductDTO();
+        productReq.setProductName("TestProduct");
+
+        productDetail = new ProductDetail();
+        productDetail.setId(1L);
+        productDetail.setProductName("TestProduct");
+    }
 
     @Test
-    public void testInsert() {
-        // Arrange
-        MyEntity entity = new MyEntity();
-        entity.setName("Test Name");
+    public void testGetProductByNameSuccess() {
+        when(repo.findAllByProductName(anyString())).thenReturn(Collections.singletonList(productDetail));
 
-        // Act
-        MyEntity savedEntity = myEntityRepository.save(entity);
+        ResponseEntity<Object> responseEntity = productService.getProductByName(productReq);
 
-        // Assert
-        assertThat(savedEntity).isNotNull();
-        assertThat(savedEntity.getId()).isNotNull();
-        assertThat(savedEntity.getName()).isEqualTo("Test Name");
+        assert responseEntity.getStatusCode() == HttpStatus.OK;
+        assert responseEntity.getBody() instanceof ProductDetail;
+        assert ((ProductDetail) responseEntity.getBody()).getProductName().equals("TestProduct");
+    }
+
+    @Test
+    public void testGetProductByNameNotFound() {
+        when(repo.findAllByProductName(anyString())).thenReturn(Collections.emptyList());
+
+        ResponseEntity<Object> responseEntity = productService.getProductByName(productReq);
+
+        assert responseEntity.getStatusCode() == HttpStatus.OK;
+        assert responseEntity.getBody() == null;
+    }
+
+    @Test
+    public void testGetProductByNameException() {
+        when(repo.findAllByProductName(anyString())).thenThrow(new RuntimeException("Database error"));
+
+        ResponseEntity<Object> responseEntity = productService.getProductByName(productReq);
+
+        assert responseEntity.getStatusCode() == HttpStatus.INTERNAL_SERVER_ERROR;
+        assert responseEntity.getBody() instanceof ErrorResponseDTO;
+        assert ((ErrorResponseDTO) responseEntity.getBody()).getMessage().equals("Error in flow, there is no record found");
     }
 }
